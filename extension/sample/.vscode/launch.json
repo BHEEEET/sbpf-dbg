@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "type": "sbpf",
+      "request": "launch",
+      "name": "Debug",
+      "program": "${workspaceFolder}/deploy/${workspaceFolderBasename}.so",
+      "debugFile": "${workspaceFolder}/.sbpf/${workspaceFolderBasename}.o",
+      "preLaunchTask": "sbpf-build",
+      "input": "93",
+      "stopOnEntry": true
+    }
+  ]
+}
