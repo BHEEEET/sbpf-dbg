@@ -73,7 +73,7 @@ The VSCode debugger extension is inside the `extension` directory.
 
 ### Demo
 
-[VSCode Debugger](docs/vscode-debugger.gif)
+![VSCode Debugger](docs/vscode-debugger.gif)
 
 -----
 
