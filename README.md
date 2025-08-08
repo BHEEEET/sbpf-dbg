@@ -71,6 +71,10 @@ Once the debugger starts, you'll see a `dbg>` prompt. Here are the available com
 ## VSCode Debugger
 The VSCode debugger extension is inside the `extension` directory. 
 
+### Demo
+
+[VSCode Debugger](docs/vscode-debugger.gif)
+
 -----
 
 ## TODO
