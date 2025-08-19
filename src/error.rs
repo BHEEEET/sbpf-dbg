@@ -10,6 +10,8 @@ pub enum DebuggerError {
     FileError(#[from] std::io::Error),
     #[error("Failed to parse object: {0}")]
     ObjectError(#[from] object::Error),
+    #[error("Computational budget exceeded")]
+    ComputationalBudgetExceeded,
 }
 
 pub type DebuggerResult<T> = Result<T, DebuggerError>;

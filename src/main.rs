@@ -1,4 +1,7 @@
 use clap::Parser;
+use solana_program_runtime::execution_budget::{
+    SVMTransactionExecutionBudget, SVMTransactionExecutionCost,
+};
 use solana_sbpf::{
     aligned_memory::AlignedMemory,
     ebpf,
@@ -10,10 +13,11 @@ use solana_sbpf::{
     verifier::RequisiteVerifier,
     vm::{Config, ContextObject, EbpfVm},
 };
-use std::{fs::File, io::Read, path::Path, sync::Arc};
+use std::{cell::RefCell, fs::File, io::Read, path::Path, sync::Arc};
 
 use crate::{
     debugger::Debugger,
+    error::DebuggerError,
     parser::{LineMap, parse_rodata},
     repl::Repl,
 };
@@ -29,9 +33,10 @@ mod syscalls;
 #[derive(Debug, Clone, Default)]
 pub struct DebugContextObject {
     /// Contains the register state at every instruction in order of execution
-    pub trace_log: Vec<TraceLogEntry>,
-    /// Maximal amount of instructions which still can be executed
-    pub remaining: u64,
+    trace_log: Vec<TraceLogEntry>,
+    compute_budget: SVMTransactionExecutionBudget,
+    execution_cost: SVMTransactionExecutionCost,
+    compute_meter: RefCell<u64>,
 }
 
 impl ContextObject for DebugContextObject {
@@ -40,21 +45,45 @@ impl ContextObject for DebugContextObject {
     }
 
     fn consume(&mut self, amount: u64) {
-        self.remaining = self.remaining.saturating_sub(amount);
+        let mut compute_meter = self.compute_meter.borrow_mut();
+        *compute_meter = compute_meter.saturating_sub(amount);
     }
 
     fn get_remaining(&self) -> u64 {
-        self.remaining
+        *self.compute_meter.borrow()
     }
 }
 
 impl DebugContextObject {
     /// Initialize with instruction meter
-    pub fn new(remaining: u64) -> Self {
+    pub fn new(
+        compute_budget: SVMTransactionExecutionBudget,
+        execution_cost: SVMTransactionExecutionCost,
+    ) -> Self {
         Self {
             trace_log: Vec::new(),
-            remaining,
+            compute_budget,
+            execution_cost,
+            compute_meter: RefCell::new(compute_budget.compute_unit_limit),
         }
+    }
+
+    pub fn consume_checked(&self, amount: u64) -> Result<(), Box<dyn std::error::Error>> {
+        let mut compute_meter = self.compute_meter.borrow_mut();
+        let exceeded = *compute_meter < amount;
+        *compute_meter = compute_meter.saturating_sub(amount);
+        if exceeded {
+            return Err(Box::new(DebuggerError::ComputationalBudgetExceeded));
+        }
+        Ok(())
+    }
+
+    pub fn get_execution_cost(&self) -> SVMTransactionExecutionCost {
+        self.execution_cost
+    }
+
+    pub fn get_compute_budget(&self) -> SVMTransactionExecutionBudget {
+        self.compute_budget
     }
 }
 
@@ -106,6 +135,8 @@ fn main() {
         enable_symbol_and_section_labels: true,
         ..Config::default()
     });
+
+    // Logging syscalls
     loader
         .register_function("sol_log_", syscalls::SyscallLog::vm)
         .unwrap();
@@ -175,20 +206,15 @@ fn main() {
         Vec::new()
     };
 
-    let max_instructions = args.max_ixs.parse::<u64>().unwrap_or_else(|e| {
-        eprintln!(
-            "error:Invalid max instructions value '{}': {}",
-            args.max_ixs, e
-        );
-        std::process::exit(1);
-    });
-
     let heap_size = args.heap.parse::<usize>().unwrap_or_else(|e| {
         eprintln!("error:Invalid heap size '{}': {}", args.heap, e);
         std::process::exit(1);
     });
 
-    let mut context_object = DebugContextObject::new(max_instructions);
+    let mut context_object = DebugContextObject::new(
+        SVMTransactionExecutionBudget::default(),
+        SVMTransactionExecutionCost::default(),
+    );
     let config = executable.get_config();
     let sbpf_version = executable.get_sbpf_version();
     let mut stack = AlignedMemory::<{ ebpf::HOST_ALIGN }>::zero_filled(config.stack_size());

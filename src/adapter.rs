@@ -14,6 +14,7 @@ pub trait DebuggerInterface {
     fn get_rodata(&self) -> Value;
     fn clear_breakpoints(&mut self, file: String) -> Value;
     fn quit(&mut self) -> Value;
+    fn get_compute_units(&self) -> Value;
 }
 
 #[derive(Deserialize)]
@@ -107,6 +108,7 @@ pub fn run_adapter_loop<T: DebuggerInterface>(debugger: &mut T) {
                             json!({"type": "error", "message": "Missing args"})
                         }
                     }
+                    "getComputeUnits" => debugger.get_compute_units(),
                     "setRegister" => {
                         if let Some(args) = cmd.args {
                             let index = args.get(0).and_then(Value::as_u64).unwrap_or(0) as usize;
@@ -188,5 +190,8 @@ impl DebuggerInterface for DummyDebugger {
     }
     fn quit(&mut self) -> Value {
         json!({"event": "quit"})
+    }
+    fn get_compute_units(&self) -> Value {
+        json!({"units": []})
     }
 }

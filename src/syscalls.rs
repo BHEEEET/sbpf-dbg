@@ -29,12 +29,11 @@ use solana_sbpf::{
 };
 use std::{slice::from_raw_parts, str::from_utf8};
 
-
 declare_builtin_function!(
     /// Prints a NULL-terminated UTF-8 string.
     SyscallLog,
     fn rust(
-        _context_object: &mut DebugContextObject,
+        context_object: &mut DebugContextObject,
         vm_addr: u64,
         len: u64,
         _arg3: u64,
@@ -42,6 +41,9 @@ declare_builtin_function!(
         _arg5: u64,
         memory_mapping: &mut MemoryMapping,
     ) -> Result<u64, Box<dyn std::error::Error>> {
+        let cost = context_object.get_execution_cost().syscall_base_cost.max(len);
+        context_object.consume_checked(cost)?;
+
         let host_addr: Result<u64, EbpfError> =
             memory_mapping.map(AccessType::Load, vm_addr, len).into();
         let host_addr = host_addr?;
@@ -59,7 +61,7 @@ declare_builtin_function!(
     /// Prints the five arguments formated as u64 in decimal.
     SyscallLogU64,
     fn rust(
-        _context_object: &mut DebugContextObject,
+        context_object: &mut DebugContextObject,
         arg1: u64,
         arg2: u64,
         arg3: u64,
@@ -67,6 +69,9 @@ declare_builtin_function!(
         arg5: u64,
         _memory_mapping: &mut MemoryMapping,
     ) -> Result<u64, Box<dyn std::error::Error>> {
+        let cost = context_object.get_execution_cost().log_64_units;
+        context_object.consume_checked(cost)?;
+
         println!(
             "Program log: {:#x}, {:#x}, {:#x}, {:#x}, {:#x}",
             arg1, arg2, arg3, arg4, arg5

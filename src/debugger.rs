@@ -39,10 +39,12 @@ pub struct Debugger<'a, 'b, C: ContextObject> {
     pub exit_code: u64,
     pub at_breakpoint: bool, // Whether we're currently stopped at a breakpoint
     pub last_breakpoint_pc: Option<u64>, // Last PC where we hit a breakpoint to avoid duplicates
+    pub initial_compute_budget: u64, // Store the initial compute budget for tracking
 }
 
 impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
     pub fn new(vm: &'a mut EbpfVm<'b, C>, executable: &'a Executable<C>) -> Self {
+        let initial_compute_budget = vm.context_object_pointer.get_remaining();
         let interpreter = Interpreter::new(vm, executable, vm.registers);
 
         Self {
@@ -57,6 +59,7 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
             exit_code: 0,
             at_breakpoint: false,
             last_breakpoint_pc: None,
+            initial_compute_budget,
         }
     }
 
@@ -164,6 +167,18 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
         self.debug_mode = debug_mode;
     }
 
+    /// Consume the accumulated due_insn_count from the VM
+    fn consume_instruction_cost(&mut self) {
+        let due_insn_count = self.interpreter.vm.due_insn_count;
+        if due_insn_count > 0 {
+            self.interpreter
+                .vm
+                .context_object_pointer
+                .consume(due_insn_count);
+            self.interpreter.vm.due_insn_count = 0;
+        }
+    }
+
     /// Run the debugger.
     pub fn run(&mut self) -> DebuggerResult<DebugEvent> {
         match self.debug_mode {
@@ -173,6 +188,9 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
                 // If we're at a breakpoint, execute the instruction and then check for next breakpoint
                 if self.at_breakpoint {
                     if self.interpreter.step() {
+                        // Consume instruction cost after successful step
+                        self.consume_instruction_cost();
+
                         self.at_breakpoint = false;
                         self.last_breakpoint_pc = None; // Clear the last breakpoint PC
                         // After executing, check if the new PC has a breakpoint
@@ -188,6 +206,7 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
                             return Ok(DebugEvent::Step(new_pc, line_number));
                         }
                     } else if let ProgramResult::Ok(result) = self.interpreter.vm.program_result {
+                        self.consume_instruction_cost();
                         return Ok(DebugEvent::Exit(result));
                     } else if let ProgramResult::Err(err) = &self.interpreter.vm.program_result {
                         let error_msg =
@@ -211,9 +230,13 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
                 }
 
                 let event = if self.interpreter.step() {
+                    // Consume instruction cost after successful step
+                    self.consume_instruction_cost();
+
                     let line_number = self.get_line_for_pc(current_pc);
                     DebugEvent::Step(current_pc, line_number)
                 } else if let ProgramResult::Ok(result) = self.interpreter.vm.program_result {
+                    self.consume_instruction_cost();
                     DebugEvent::Exit(result)
                 } else if let ProgramResult::Err(err) = &self.interpreter.vm.program_result {
                     let error_msg = format!("Program error at PC 0x{:016x}: {:?}", current_pc, err);
@@ -230,9 +253,13 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
                 // If we're at a breakpoint, execute the instruction and continue.
                 if self.at_breakpoint {
                     if self.interpreter.step() {
+                        // Consume instruction cost after successful step
+                        self.consume_instruction_cost();
+
                         self.at_breakpoint = false;
                         self.last_breakpoint_pc = None; // Clear the last breakpoint PC.
                     } else if let ProgramResult::Ok(result) = self.interpreter.vm.program_result {
+                        self.consume_instruction_cost();
                         return Ok(DebugEvent::Exit(result));
                     } else if let ProgramResult::Err(err) = &self.interpreter.vm.program_result {
                         let error_msg =
@@ -259,7 +286,10 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
 
                 // Execute the instruction.
                 if self.interpreter.step() {
+                    // Consume instruction cost after successful step
+                    self.consume_instruction_cost();
                 } else if let ProgramResult::Ok(result) = self.interpreter.vm.program_result {
+                    self.consume_instruction_cost();
                     return Ok(DebugEvent::Exit(result));
                 } else if let ProgramResult::Err(err) = &self.interpreter.vm.program_result {
                     let error_msg = format!("Program error at PC 0x{:016x}: {:?}", current_pc, err);
@@ -550,5 +580,18 @@ impl<'a, 'b, C: ContextObject> DebuggerInterface for Debugger<'a, 'b, C> {
         } else {
             json!({ "rodata": [] })
         }
+    }
+
+    fn get_compute_units(&self) -> Value {
+        let context = &self.interpreter.vm.context_object_pointer;
+        let remaining = context.get_remaining();
+        let total = self.initial_compute_budget;
+        let used = total.saturating_sub(remaining);
+
+        json!({
+            "total": total,
+            "used": used,
+            "remaining": remaining,
+        })
     }
 }
