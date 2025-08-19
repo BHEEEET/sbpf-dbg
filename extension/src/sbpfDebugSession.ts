@@ -412,7 +412,6 @@ export class SbpfDebugSession extends LoggingDebugSession {
     } else if (v === "compute") {
       const cu = await this._runtime.getComputeUnits();
       vars = [
-        { name: "Total", value: cu.total.toString(), type: "u64" },
         { name: "Used", value: cu.used.toString(), type: "u64" },
         { name: "Remaining", value: cu.remaining.toString(), type: "u64" },
       ];
