@@ -99,13 +99,9 @@ export class SbpfRuntime extends EventEmitter {
       if (config.debugFile) {
         args.push("--debug-file", config.debugFile);
       }
-      this.debuggerProcess = spawn(
-        "sbpf-dbg",
-        args,
-        {
-          stdio: ["pipe", "pipe", "pipe"],
-        }
-      );
+      this.debuggerProcess = spawn("sbpf-dbg", args, {
+        stdio: ["pipe", "pipe", "pipe"],
+      });
       if (!this.debuggerProcess.stdout || !this.debuggerProcess.stdin) {
         reject(new Error("Failed to create debugger process"));
         return;
@@ -123,7 +119,10 @@ export class SbpfRuntime extends EventEmitter {
       });
       this.debuggerProcess.on("close", (code) => {
         if (typeof code === "number" && code !== 0) {
-          this.emit("error", new Error(`Debugger process exited with code ${code}`));
+          this.emit(
+            "error",
+            new Error(`Debugger process exited with code ${code}`)
+          );
         }
         this.emit("exit");
       });
@@ -192,7 +191,19 @@ export class SbpfRuntime extends EventEmitter {
       ) {
         const data = event.data as any;
         if (data.type === "exit") {
-          this.emit("output", "stdout", `Program exited with code: ${event.data.code}`);
+          this.emit(
+            "output",
+            "stdout",
+            `Program exited with code: ${event.data.code}`
+          );
+          // Log compute units usage
+          if (data.compute_units) {
+            this.emit(
+              "output",
+              "stdout",
+              `Program consumed ${data.compute_units.used} of ${data.compute_units.total} compute units`
+            );
+          }
           this.emit("exit");
         } else if (data.type === "error") {
           const errorMsg = data.message || "Runtime error occurred";
@@ -316,6 +327,23 @@ export class SbpfRuntime extends EventEmitter {
       return resp.data;
     }
     return { hasDwarf: false, sourceFiles: [], functions: [] };
+  }
+
+  public async getComputeUnits(): Promise<{
+    total: number;
+    used: number;
+    remaining: number;
+  }> {
+    const resp = await this.sendCommand({ command: "getComputeUnits" });
+    if (resp.success && resp.data) {
+      const d = resp.data as any;
+      return {
+        total: typeof d.total === "number" ? d.total : 0,
+        used: typeof d.used === "number" ? d.used : 0,
+        remaining: typeof d.remaining === "number" ? d.remaining : 0,
+      };
+    }
+    return { total: 0, used: 0, remaining: 0 };
   }
   public async shutdown(): Promise<void> {
     if (this.debuggerProcess) {

@@ -362,7 +362,8 @@ impl<'a, 'b, C: ContextObject> DebuggerInterface for Debugger<'a, 'b, C> {
                 }),
                 DebugEvent::Exit(code) => json!({
                     "type": "exit",
-                    "code": code
+                    "code": code,
+                    "compute_units": self.get_compute_units()
                 }),
                 DebugEvent::Error(msg) => json!({
                     "type": "error",

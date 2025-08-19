@@ -389,6 +389,11 @@ export class SbpfDebugSession extends LoggingDebugSession {
       scopes: [
         new Scope("Registers", this._variableHandles.create("registers"), true),
         new Scope("Rodata", this._variableHandles.create("rodata"), true),
+        new Scope(
+          "Compute Units",
+          this._variableHandles.create("compute"),
+          true
+        ),
       ],
     };
     this.sendResponse(response);
@@ -404,6 +409,13 @@ export class SbpfDebugSession extends LoggingDebugSession {
       vars = (await this._runtime.getRegisters()) || [];
     } else if (v === "rodata") {
       vars = (await this._runtime.getRodata()) || [];
+    } else if (v === "compute") {
+      const cu = await this._runtime.getComputeUnits();
+      vars = [
+        { name: "Total", value: cu.total.toString(), type: "u64" },
+        { name: "Used", value: cu.used.toString(), type: "u64" },
+        { name: "Remaining", value: cu.remaining.toString(), type: "u64" },
+      ];
     } else {
       vars = [];
     }
