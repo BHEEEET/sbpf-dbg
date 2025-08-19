@@ -78,8 +78,10 @@ The VSCode debugger extension is inside the `extension` directory.
 -----
 
 ## TODO
-- Handle accounts input
-- Track compute units usage
-- Add more syscalls
-- ...
+
+- [x] Track compute units usage
+- [ ] Handle accounts input
+- [ ] Add all syscalls
+- [ ] Integrate assembly build process into the debugger
+- [ ] ...
 
