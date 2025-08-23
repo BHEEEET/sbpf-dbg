@@ -22,10 +22,10 @@ import { SbpfRuntime, ISbpfLaunchConfig } from "./sbpfRuntime";
  * The interface should always match this schema.
  */
 interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
-  /** An absolute path to the "program" (.so) file. */
+  /** An absolute path to the "program" (.s assembly file). */
   program: string;
-  /** An aboslute path to the debug (.o) file.  */
-  debugFile: string;
+  /** An absolute path to the custom linker (.ld) file.  */
+  linker?: string;
   /** Program input. */
   input: string;
   /** Automatically stop target after launch. If not specified, target does not stop. */
@@ -218,7 +218,7 @@ export class SbpfDebugSession extends LoggingDebugSession {
 
       const config: ISbpfLaunchConfig = {
         program: args.program,
-        debugFile: args.debugFile,
+        linker: args.linker,
         input: args.input,
         stopOnEntry: args.stopOnEntry,
         heap: "heap" in args && args.heap ? parseInt(args.heap as any) : 0,

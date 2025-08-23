@@ -50,8 +50,8 @@ export interface ISbpfDebugInfo {
 }
 
 export interface ISbpfLaunchConfig {
-  program: string; // Path to .so file
-  debugFile?: string; // Path to .o file with debug info
+  program: string; // Path to .s assembly file
+  linker?: string; // Path to custom linker file (.ld)
   input?: string; // Program input (file or hex string)
   heap?: number; // Heap size in bytes
   maxInstructions?: number; // Max instructions to execute
@@ -96,8 +96,8 @@ export class SbpfRuntime extends EventEmitter {
         (config.maxInstructions || 10000).toString(),
         "--adapter",
       ];
-      if (config.debugFile) {
-        args.push("--debug-file", config.debugFile);
+      if (config.linker) {
+        args.push("--linker", config.linker);
       }
       this.debuggerProcess = spawn("sbpf-dbg", args, {
         stdio: ["pipe", "pipe", "pipe"],
