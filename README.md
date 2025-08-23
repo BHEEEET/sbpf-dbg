@@ -7,6 +7,7 @@ An interactive debugger for Solana sBPF programs.
 - Execution control (step/continue)
 - Breakpoint support
 - Register inspection and modification
+- Compute Units (CU) tracking
 - Error handling
 - REPL interface
 - VSCode debug adapter
@@ -27,8 +28,8 @@ The debugger requires Solana platform tools to build assembly files with debug i
 
 ### Example
 ```bash
-sbpf-dbg -f src/sample/sample.s
-sbpf-dbg -f src/sample/sample.s --linker src/sample/custom.ld
+sbpf-dbg --file src/sample/sample.s
+sbpf-dbg --file src/sample/sample.s --linker src/sample/custom.ld
 ```
 
 ### Command Line Options
@@ -80,8 +81,8 @@ The VSCode debugger extension is inside the `extension` directory.
 ## TODO
 
 - [x] Track compute units usage
-- [ ] Handle accounts input
+- [x] Integrate the assembly build process into the debugger
+- [ ] Handle serialized input
 - [ ] Add all syscalls
-- [ ] Integrate assembly build process into the debugger
 - [ ] ...
 
