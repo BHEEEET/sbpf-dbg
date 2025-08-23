@@ -9,6 +9,12 @@ This extension provides debugging support for sBPF Assembly programs in Visual S
 - Track Compute Units (CU)
 - View output and errors
 
+## Requirements
+- sBPF assembly file (`.s` file)
+- (Optional) Custom linker file (`.ld` file)
+- [sbpf-dbg](https://github.com/bidhan-a/sbpf-dbg) debugger binary available on your system
+- Solana platform tools
+
 ## Getting Started
 
 1. **Install the sBPF Debug extension in VS Code.**
@@ -39,15 +45,3 @@ This extension provides debugging support for sBPF Assembly programs in Visual S
    - Select "Debug" as the environment.
    - Press the green play button to start debugging.
 
-## Build and Run
-
-- Clone the project.
-- Open the project folder in VS Code.
-- Press `F5` to build and launch SBPF Debug in a new VS Code window.
-- Open your SBPF assembly file and set breakpoints as needed.
-
-## Requirements
-- sBPF assembly file (`.s` file)
-- (Optional) Custom linker file (`.ld` file)
-- [sbpf-dbg](https://github.com/bidhan-a/sbpf-dbg) debugger binary available on your system
-- Solana platform tools
