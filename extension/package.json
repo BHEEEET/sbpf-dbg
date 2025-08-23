@@ -146,13 +146,13 @@
             "properties": {
               "program": {
                 "type": "string",
-                "description": "Absolute path to a text file.",
-                "default": "${workspaceFolder}/deploy/${workspaceFolderBasename}.so"
+                "description": "Absolute path to an assembly file (.s).",
+                "default": "${workspaceFolder}/src/${workspaceFolderBasename}/${workspaceFolderBasename}.s"
               },
-              "debugFile": {
+              "linker": {
                 "type": "string",
-                "description": "Absolute path to a debug file.",
-                "default": "${workspaceFolder}/.sbpf/${workspaceFolderBasename}.o"
+                "description": "Absolute path to a custom linker file (.ld).",
+                "default": ""
               },
               "input": {
                 "type": "string",
@@ -192,13 +192,13 @@
             "properties": {
               "program": {
                 "type": "string",
-                "description": "Absolute path to a text file.",
-                "default": "${workspaceFolder}/deploy/${workspaceFolderBasename}.so"
+                "description": "Absolute path to an assembly file (.s).",
+                "default": "${workspaceFolder}/src/${workspaceFolderBasename}/${workspaceFolderBasename}.s"
               },
-              "debugFile": {
+              "linker": {
                 "type": "string",
-                "description": "Absolute path to a debug file.",
-                "default": "${workspaceFolder}/.sbpf/${workspaceFolderBasename}.o"
+                "description": "Absolute path to a custom linker file (.ld).",
+                "default": ""
               },
               "input": {
                 "type": "string",
@@ -236,9 +236,8 @@
           {
             "type": "sbpf",
             "request": "launch",
-            "name": "Ask for file name",
-            "program": "${workspaceFolder}/deploy/${workspaceFolderBasename}.so",
-            "debugFile": "${workspaceFolder}/.sbpf/${workspaceFolderBasename}.o",
+            "name": "Debug Assembly",
+            "program": "${workspaceFolder}/src/${workspaceFolderBasename}/${workspaceFolderBasename}.s",
             "input": "0",
             "stopOnEntry": true
           }

@@ -5,9 +5,7 @@
       "type": "sbpf",
       "request": "launch",
       "name": "Debug",
-      "program": "${workspaceFolder}/deploy/${workspaceFolderBasename}.so",
-      "debugFile": "${workspaceFolder}/.sbpf/${workspaceFolderBasename}.o",
-      "preLaunchTask": "sbpf-build",
+      "program": "${workspaceFolder}/src/${workspaceFolderBasename}/${workspaceFolderBasename}.s",
       "input": "93",
       "stopOnEntry": true
     }

@@ -16,13 +16,15 @@ use solana_sbpf::{
 use std::{cell::RefCell, fs::File, io::Read, path::Path, sync::Arc};
 
 use crate::{
+    build::{build_assembly, BuildConfig},
     debugger::Debugger,
     error::DebuggerError,
-    parser::{LineMap, parse_rodata},
+    parser::{parse_rodata, LineMap},
     repl::Repl,
 };
 
 mod adapter;
+mod build;
 mod debugger;
 mod error;
 mod parser;
@@ -93,17 +95,17 @@ struct Args {
         short,
         long,
         value_name = "FILE",
-        help = "Path to the sBPF executable (.so file)"
+        help = "Path to the assembly file (.s file)"
     )]
     file: String,
 
     #[arg(
         short,
         long,
-        value_name = "DEBUG_FILE",
-        help = "Path to the debug info file (.o file)"
+        value_name = "LINKER",
+        help = "Path to custom linker file (.ld file)"
     )]
-    debug_file: Option<String>,
+    linker: Option<String>,
 
     #[arg(
         long,
@@ -131,6 +133,18 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    // Build the assembly file
+    let build_config = BuildConfig {
+        assembly_file: args.file.clone(),
+        linker_file: args.linker.clone(),
+        debug: true, // Always build with debug information for debugging
+    };
+
+    let build_result = build_assembly(&build_config).unwrap_or_else(|e| {
+        eprintln!("error:Failed to build assembly: {}", e);
+        std::process::exit(1);
+    });
+
     let mut loader = BuiltinProgram::new_loader(Config {
         enable_symbol_and_section_labels: true,
         ..Config::default()
@@ -146,30 +160,34 @@ fn main() {
     let loader = Arc::new(loader);
 
     // Try to load DWARF line mapping from debug file or executable.
-    let file_path = args.file.as_ref();
-    let debug_file_path = args.debug_file.as_ref().unwrap_or(&args.file);
+    let file_path = &build_result.shared_object_file;
+    let debug_file_path = &build_result.object_file;
     let line_map = LineMap::from_elf_file(debug_file_path).ok();
     let rodata = parse_rodata(file_path, debug_file_path).ok();
 
     #[allow(unused_mut)]
     let mut executable = {
-        let mut file = File::open(Path::new(&args.file)).unwrap_or_else(|e| {
-            eprintln!(
-                "error:Failed to open executable file '{}': {}",
-                args.file, e
-            );
-            std::process::exit(1);
-        });
+        let mut file =
+            File::open(Path::new(&build_result.shared_object_file)).unwrap_or_else(|e| {
+                eprintln!(
+                    "error:Failed to open executable file '{}': {}",
+                    build_result.shared_object_file, e
+                );
+                std::process::exit(1);
+            });
         let mut elf = Vec::new();
         file.read_to_end(&mut elf).unwrap_or_else(|e| {
             eprintln!(
                 "error:Failed to read executable file '{}': {}",
-                args.file, e
+                build_result.shared_object_file, e
             );
             std::process::exit(1);
         });
         Executable::<DebugContextObject>::from_elf(&elf, loader).map_err(|err| {
-            eprintln!("error:Failed to load executable '{}': {:?}", args.file, err);
+            eprintln!(
+                "error:Failed to load executable '{}': {:?}",
+                build_result.shared_object_file, err
+            );
             format!("Executable constructor failed: {err:?}")
         })
     }

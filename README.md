@@ -18,22 +18,22 @@ An interactive debugger for Solana sBPF programs.
 cargo install --git https://github.com/bidhan-a/sbpf-dbg
 ```
 
-### sbpf
+### Solana Platform Tools
 
-The debugger works best with projects built using [sbpf](https://github.com/deanmlittle/sbpf).
+The debugger requires Solana platform tools to build assembly files with debug information enabled. Please make sure to download the latest release from [here](https://docs.solanalabs.com/cli/install).
 
-Note: To enable debugging, the assembly must be compiled with debug information (`sbpf build --debug`). This functionality is not yet available in the official sbpf repo, but is supported in this [fork](https://github.com/bidhan-a/sbpf-cli/tree/feat/debug).
 
 ## Usage
 
 ### Example
 ```bash
-sbpf-dbg -f test_programs/test.so -d test_programs/test.o
+sbpf-dbg -f src/sample/sample.s
+sbpf-dbg -f src/sample/sample.s --linker src/sample/custom.ld
 ```
 
 ### Command Line Options
-- `-f, --file <FILE>`: Path to the program ELF (.so)
-- `-d, --debug-file <DEBUG_FILE>`: Path to the debug info file (.o)
+- `-f, --file <FILE>`: Path to the assembly file (.s)
+- `-l, --linker <LINKER>`: Path to custom linker file (.ld) (optional)
 - `--input <BYTES>`: Program input bytes (default: "0")
 
 ## REPL
