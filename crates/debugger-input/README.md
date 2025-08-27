@@ -44,5 +44,5 @@ fn main() {
 
 ### Notes
 
-1. The input (.hex) files are generated inside a .dbg folder in the workspace.
+1. The input (.hex) files are generated inside a .dbg folder in the workspace. Add this folder to .gitignore if desired.
 2. You can either create a separate Rust script to generate the input files or integrate the logic into your existing Rust tests (see example [here](../../extension/sample/src/lib.rs)).
