@@ -37,7 +37,7 @@ fn main() {
         &instruction,
         &[(owner_pubkey, owner_account)]
         "input",
-    )?;
+    ).unwrap();
 }
 
 ```
