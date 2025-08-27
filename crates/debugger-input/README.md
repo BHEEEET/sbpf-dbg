@@ -4,6 +4,14 @@ This crate provides functionality for generating serialized debugger input to de
 
 ## Usage
 
+Cargo.toml
+```
+[dev-dependencies]
+sbpf-dbg-input = { git = "https://github.com/bidhan-a/sbpf-dbg" }
+...
+```
+
+main.rs
 ```rust
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},

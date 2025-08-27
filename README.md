@@ -16,7 +16,7 @@ An interactive debugger for Solana sBPF programs.
 ## Installation
 
 ```bash
-cargo install --git https://github.com/bidhan-a/sbpf-dbg debugger
+cargo install --git https://github.com/bidhan-a/sbpf-dbg
 ```
 
 ### Solana Platform Tools
@@ -30,6 +30,7 @@ The debugger requires Solana platform tools to build assembly files with debug i
 ```bash
 sbpf-dbg --file src/sample/sample.s
 sbpf-dbg --file src/sample/sample.s --linker src/sample/custom.ld
+sbpf-dbg --file src/sample/sample.s --input .dbg/sample_input.hex
 ```
 
 ### Generating input
