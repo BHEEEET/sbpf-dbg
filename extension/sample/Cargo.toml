@@ -8,6 +8,7 @@ edition = "2021"
 [dev-dependencies]
 mollusk-svm = "0.4.1"
 solana-sdk = "2.3.1"
+sbpf-dbg-input = { path = "../../crates/debugger-input" }
 
 [features]
 test-sbf = []

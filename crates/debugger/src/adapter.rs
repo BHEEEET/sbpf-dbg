@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::io::{self, BufRead, Write};
 
 pub trait DebuggerInterface {
@@ -147,51 +147,5 @@ pub fn run_adapter_loop<T: DebuggerInterface>(debugger: &mut T) {
         let resp_str = serde_json::to_string(&response).unwrap();
         writeln!(stdout, "{}", resp_str).unwrap();
         stdout.flush().unwrap();
-    }
-}
-
-// Dummy implementation for testing (todo: remove this)
-pub struct DummyDebugger;
-impl DebuggerInterface for DummyDebugger {
-    fn step(&mut self) -> Value {
-        json!({"event": "step", "pc": 0x1000})
-    }
-    fn r#continue(&mut self) -> Value {
-        json!({"event": "continue"})
-    }
-    fn set_breakpoint(&mut self, file: String, line: usize) -> Value {
-        json!({"event": "setBreakpoint", "file": file, "line": line})
-    }
-    fn remove_breakpoint(&mut self, file: String, line: usize) -> Value {
-        json!({"event": "removeBreakpoint", "file": file, "line": line})
-    }
-    fn get_stack_frames(&self) -> Value {
-        json!({"frames": []})
-    }
-    fn get_registers(&self) -> Value {
-        json!({"registers": []})
-    }
-    fn get_memory(&self, address: u64, size: usize) -> Value {
-        json!({"address": address, "size": size, "data": []})
-    }
-    fn set_register(&mut self, index: usize, value: u64) -> Value {
-        json!({"event": "setRegister", "index": index, "value": value})
-    }
-    fn get_rodata(&self) -> Value {
-        json!({
-            "rodata": [
-                {"name": ".rodata1", "address": 0x1000, "content": "deadbeef"},
-                {"name": ".rodata2", "address": 0x2000, "content": "cafebabe"}
-            ]
-        })
-    }
-    fn clear_breakpoints(&mut self, _file: String) -> Value {
-        json!({"result": "ok"})
-    }
-    fn quit(&mut self) -> Value {
-        json!({"event": "quit"})
-    }
-    fn get_compute_units(&self) -> Value {
-        json!({"units": []})
     }
 }

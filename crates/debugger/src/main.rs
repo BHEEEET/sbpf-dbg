@@ -31,6 +31,64 @@ mod parser;
 mod repl;
 mod syscalls;
 
+/// Parse hex string into bytes
+fn parse_hex(hex: &str) -> Result<Vec<u8>, String> {
+    let hex = hex.trim();
+
+    // Remove 0x prefix if present
+    let hex = if hex.starts_with("0x") || hex.starts_with("0X") {
+        &hex[2..]
+    } else {
+        hex
+    };
+
+    // Ensure even length
+    if hex.len() % 2 != 0 {
+        return Err("Hex string must have even length".to_string());
+    }
+
+    let mut bytes = Vec::with_capacity(hex.len() / 2);
+    for i in (0..hex.len()).step_by(2) {
+        let byte_str = &hex[i..i + 2];
+        let byte = u8::from_str_radix(byte_str, 16)
+            .map_err(|_| format!("Invalid hex character in '{}'", byte_str))?;
+        bytes.push(byte);
+    }
+
+    Ok(bytes)
+}
+
+/// Parse input as either a file path or hex string
+fn parse_input(input: &str) -> Result<Vec<u8>, String> {
+    let input = input.trim();
+
+    if input.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Check if input looks like a file path (contains path separators or ends with .hex)
+    if input.contains('/') || input.contains('\\') || input.ends_with(".hex") {
+        // Try to read as file
+        let path = Path::new(input);
+        if !path.exists() {
+            return Err(format!("File not found: {}", input));
+        }
+
+        let mut file =
+            File::open(path).map_err(|e| format!("Failed to open file '{}': {}", input, e))?;
+
+        let mut content = String::new();
+        file.read_to_string(&mut content)
+            .map_err(|e| format!("Failed to read file '{}': {}", input, e))?;
+
+        // Parse the file content as hex
+        parse_hex(&content)
+    } else {
+        // Try to parse as hex string directly
+        parse_hex(input)
+    }
+}
+
 /// Simple instruction meter for testing
 #[derive(Debug, Clone, Default)]
 pub struct DebugContextObject {
@@ -109,9 +167,9 @@ struct Args {
 
     #[arg(
         long,
-        value_name = "BYTES",
-        help = "Program input",
-        default_value = "0"
+        value_name = "INPUT",
+        help = "Program input (hex string or path to .hex file)",
+        default_value = ""
     )]
     input: String,
 
@@ -203,25 +261,12 @@ fn main() {
             std::process::exit(1);
         });
 
-    let mut mem: Vec<u8> = if !args.input.trim().is_empty() {
-        let parts: Vec<&str> = args.input.split(',').collect();
-        let mut bytes = Vec::with_capacity(parts.len());
-        for part in parts {
-            let trimmed = part.trim();
-            if trimmed.is_empty() {
-                continue;
-            }
-            match trimmed.parse::<u8>() {
-                Ok(b) => bytes.push(b),
-                Err(_) => {
-                    eprintln!("error:Invalid byte value in input: '{}'", trimmed);
-                    std::process::exit(1);
-                }
-            }
+    let mut mem: Vec<u8> = match parse_input(&args.input) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            eprintln!("error:Failed to parse input: {}", e);
+            std::process::exit(1);
         }
-        bytes
-    } else {
-        Vec::new()
     };
 
     let heap_size = args.heap.parse::<usize>().unwrap_or_else(|e| {

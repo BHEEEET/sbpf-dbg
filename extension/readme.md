@@ -33,7 +33,7 @@ This extension provides debugging support for sBPF Assembly programs in Visual S
       "request": "launch",
       "name": "Debug SBPF Program",
       "program": "${workspaceFolder}/src/${workspaceFolderBasename}/${workspaceFolderBasename}.s",
-      "input": "0",
+      "input": "${workspaceFolder}/src/.dbg/sample_input.hex",
       "stopOnEntry": true
     }
   ]

@@ -16,7 +16,7 @@ An interactive debugger for Solana sBPF programs.
 ## Installation
 
 ```bash
-cargo install --git https://github.com/bidhan-a/sbpf-dbg
+cargo install --git https://github.com/bidhan-a/sbpf-dbg debugger
 ```
 
 ### Solana Platform Tools
@@ -32,10 +32,14 @@ sbpf-dbg --file src/sample/sample.s
 sbpf-dbg --file src/sample/sample.s --linker src/sample/custom.ld
 ```
 
+### Generating input
+Use the [sbpf-debugger-input](crates/debugger-input/) package to generate serialized input for your program, if input is required.
+
 ### Command Line Options
 - `-f, --file <FILE>`: Path to the assembly file (.s)
-- `-l, --linker <LINKER>`: Path to custom linker file (.ld) (optional)
-- `--input <BYTES>`: Program input bytes (default: "0")
+- `-l, --linker <FILE>`: Path to custom linker file (.ld) (optional)
+- `--input <FILE>`: Path to input hex file (optional)
+
 
 ## REPL
 

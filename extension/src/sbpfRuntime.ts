@@ -89,7 +89,7 @@ export class SbpfRuntime extends EventEmitter {
         "--file",
         config.program,
         "--input",
-        config.input || "0",
+        config.input || "0x",
         "--heap",
         (config.heap || 0).toString(),
         "--max-ixs",
