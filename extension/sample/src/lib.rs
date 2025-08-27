@@ -24,7 +24,12 @@ mod tests {
         );
 
         // Generate debugger input.
-        sbpf_dbg_input::generate(&instruction, "sample_input").unwrap();
+        sbpf_dbg_input::generate(
+            &instruction,
+            &[(owner_pubkey, owner_account.clone())],
+            "sample_input",
+        )
+        .unwrap();
 
         let mollusk = Mollusk::new(&program_id, "deploy/sample");
 

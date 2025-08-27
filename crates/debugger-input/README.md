@@ -14,20 +14,20 @@ use sbpf_dbg_input::generate;
 fn main() {
     let program_id = Pubkey::new_unique();
     let owner_pubkey = Pubkey::new_unique();
-    let vault_pda = Pubkey::new_unique();
+    let owner_account = Account::new(1000000000, 0, &program_id);
 
     let instruction = Instruction::new_with_bytes(
         program_id,
         &[1, 2, 3, 4], // instruction data
         vec![
             AccountMeta::new(owner_pubkey, true),
-            AccountMeta::new(vault_pda, false),
         ],
     );
 
     // Generate debugger input
     generate(
         &instruction,
+        &[(owner_pubkey, owner_account)]
         "input",
     )?;
 }
