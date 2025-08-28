@@ -1,6 +1,6 @@
 # sBPF Debugger Input
 
-This crate provides functionality for generating serialized debugger input to debug sBPF Assembly programs using the sBPF Debugger.
+This crate provides functionality for generating serialized input to debug sBPF Assembly programs using the sBPF Debugger.
 
 ## Serialization format
 
