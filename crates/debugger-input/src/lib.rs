@@ -21,7 +21,6 @@ pub enum DebuggerInputError {
 /// Constants for alignment and memory management
 const BPF_ALIGN_OF_U128: usize = 16;
 const MAX_PERMITTED_DATA_INCREASE: usize = 10240; // 10k bytes
-
 /// Marker for non-duplicate accounts
 const NON_DUP_MARKER: u8 = 0xff;
 
