@@ -1,7 +1,7 @@
 .globl entrypoint
 entrypoint:
     // Grab the Fibonacci sequence target from our instruction data
-    ldxb r8, [r1+0] // input ix
+    ldxb r8, [r1+8+8+80+10240+8+8] // 8 accounts length + 8 flags + 80 account data + 10240 realloc padding + 8 padding + 8 ix length
     mov64 r6, 0
     mov64 r7, 1 // Skip first sequence and return 0 if n<1
     jgt r8, 93, overflow // handle overflow

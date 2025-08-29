@@ -1,10 +1,33 @@
-use anyhow::{Error, Result};
 use dirs::home_dir;
 use std::fs;
-use std::io;
 use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum BuildError {
+    #[error("Solana config not found. Please install the Solana CLI:\n\nhttps://docs.anza.xyz/cli/install")]
+    SolanaConfigNotFound,
+    #[error("Could not find active_release_dir in Solana config")]
+    ActiveReleaseDirNotFound,
+    #[error("Solana platform-tools not found. Please download the latest release from here: https://docs.solanalabs.com/cli/install")]
+    PlatformToolsNotFound,
+    #[error("Invalid assembly file path")]
+    InvalidAssemblyPath,
+    #[error("Compilation failed")]
+    CompilationFailed,
+    #[error("Linking failed")]
+    LinkingFailed,
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("YAML parsing error: {0}")]
+    Yaml(#[from] serde_yaml::Error),
+    #[error("Temp file error: {0}")]
+    TempFile(#[from] tempfile::PersistError),
+}
+
+pub type Result<T> = std::result::Result<T, BuildError>;
 
 pub const DEFAULT_LINKER: &str = r#"PHDRS
 {
@@ -53,7 +76,7 @@ pub fn build_assembly(config: &BuildConfig) -> Result<BuildResult> {
     let config_path = home_dir.join(".config/solana/install/config.yml");
 
     if !Path::new(&config_path).exists() {
-        return Err(Error::msg("Solana config not found. Please install the Solana CLI:\n\nhttps://docs.anza.xyz/cli/install"));
+        return Err(BuildError::SolanaConfigNotFound);
     }
 
     // Read the file contents
@@ -65,7 +88,7 @@ pub fn build_assembly(config: &BuildConfig) -> Result<BuildResult> {
     // Solana SDK and toolchain paths
     let active_release_dir = solana_config["active_release_dir"]
         .as_str()
-        .ok_or_else(|| Error::msg("Could not find active_release_dir in Solana config"))?;
+        .ok_or_else(|| BuildError::ActiveReleaseDirNotFound)?;
 
     let platform_tools = format!(
         "{}/bin/platform-tools-sdk/sbf/dependencies/platform-tools",
@@ -77,7 +100,7 @@ pub fn build_assembly(config: &BuildConfig) -> Result<BuildResult> {
 
     // Check for platform tools
     if !Path::new(&llvm_dir).exists() {
-        return Err(Error::msg(format!("Solana platform-tools not found. Please download the latest release from here: https://docs.solanalabs.com/cli/install")));
+        return Err(BuildError::PlatformToolsNotFound);
     }
 
     // Create temporary directory for build artifacts.
@@ -89,7 +112,7 @@ pub fn build_assembly(config: &BuildConfig) -> Result<BuildResult> {
     let filename = assembly_path
         .file_stem()
         .and_then(|s| s.to_str())
-        .ok_or_else(|| Error::msg("Invalid assembly file path"))?;
+        .ok_or_else(|| BuildError::InvalidAssemblyPath)?;
 
     // Generate object file path.
     let object_file = format!("{}/{}.o", dbg_dir, filename);
@@ -131,10 +154,7 @@ fn compile_assembly(clang: &str, input_file: &str, output_file: &str, debug: boo
 
     if !status.success() {
         eprintln!("Failed to compile assembly file: {}", input_file);
-        return Err(Error::new(io::Error::new(
-            io::ErrorKind::Other,
-            "Compilation failed",
-        )));
+        return Err(BuildError::CompilationFailed);
     }
 
     Ok(())
@@ -161,10 +181,7 @@ fn build_shared_object(
 
     if !status.success() {
         eprintln!("Failed to build shared object: {}", output_file);
-        return Err(Error::new(io::Error::new(
-            io::ErrorKind::Other,
-            "Linking failed",
-        )));
+        return Err(BuildError::LinkingFailed);
     }
 
     Ok(())

@@ -30,12 +30,19 @@ The debugger requires Solana platform tools to build assembly files with debug i
 ```bash
 sbpf-dbg --file src/sample/sample.s
 sbpf-dbg --file src/sample/sample.s --linker src/sample/custom.ld
+sbpf-dbg --file src/sample/sample.s --input .dbg/sample_input.hex
 ```
+
+### Program Input
+sBPF programs require input parameters to be serialized into a specific byte array format. This array is then passed to the program’s entrypoint, where the program is responsible for deserializing it on-chain.
+
+Use the [sbpf-debugger-input](crates/debugger-input/) crate to generate serialized input for your program, if input is required.
 
 ### Command Line Options
 - `-f, --file <FILE>`: Path to the assembly file (.s)
-- `-l, --linker <LINKER>`: Path to custom linker file (.ld) (optional)
-- `--input <BYTES>`: Program input bytes (default: "0")
+- `-l, --linker <FILE>`: Path to custom linker file (.ld) (optional)
+- `--input <FILE>`: Path to input hex file (optional)
+
 
 ## REPL
 
@@ -82,7 +89,7 @@ The VSCode debugger extension is inside the `extension` directory.
 
 - [x] Track compute units usage
 - [x] Integrate the assembly build process into the debugger
-- [ ] Handle serialized input
+- [x] Handle serialized input
 - [ ] Add all syscalls
 - [ ] ...
 
