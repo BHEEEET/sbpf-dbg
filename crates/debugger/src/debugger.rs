@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use solana_sbpf::ebpf;
 use solana_sbpf::elf::Executable;
 use solana_sbpf::error::ProgramResult;
@@ -193,6 +193,7 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
 
                         self.at_breakpoint = false;
                         self.last_breakpoint_pc = None; // Clear the last breakpoint PC
+
                         // After executing, check if the new PC has a breakpoint
                         let new_pc = self.get_pc();
                         if self.breakpoints.contains(&new_pc) {
@@ -486,22 +487,7 @@ impl<'a, 'b, C: ContextObject> DebuggerInterface for Debugger<'a, 'b, C> {
             ("?".to_string(), "?".to_string(), 0)
         };
 
-        if vm.call_depth > 0 {
-            for (_i, frame) in vm.call_frames[..vm.call_depth as usize].iter().enumerate() {
-                let pc = frame.target_pc;
-                let (name, file, line) = lookup(pc);
-                frames.push(json!({
-                    "index": index,
-                    "name": name,
-                    "file": file,
-                    "line": line,
-                    "instruction": pc
-                }));
-                index += 1;
-            }
-        }
-
-        // Add the current frame (top of stack)
+        // Add the current frame first (top of stack)
         let current_pc = self.get_pc();
         let (name, file, line) = lookup(current_pc);
         frames.push(json!({
@@ -511,6 +497,24 @@ impl<'a, 'b, C: ContextObject> DebuggerInterface for Debugger<'a, 'b, C> {
             "line": line,
             "instruction": current_pc
         }));
+        index += 1;
+
+        // Add call frames in reverse order (oldest first)
+        if vm.call_depth > 0 {
+            for (_i, frame) in vm.call_frames[..vm.call_depth as usize].iter().enumerate() {
+                let pc = frame.target_pc;
+                let pc_bytes = pc * ebpf::INSN_SIZE as u64;
+                let (name, file, line) = lookup(pc_bytes);
+                frames.push(json!({
+                    "index": index,
+                    "name": name,
+                    "file": file,
+                    "line": line,
+                    "instruction": pc_bytes
+                }));
+                index += 1;
+            }
+        }
 
         json!({ "frames": frames })
     }
