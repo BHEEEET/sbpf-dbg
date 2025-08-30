@@ -178,7 +178,7 @@ export class SbpfDebugSession extends LoggingDebugSession {
     response.body.supportSuspendDebuggee = true;
     response.body.supportTerminateDebuggee = true;
     response.body.supportsFunctionBreakpoints = true;
-    response.body.supportsDelayedStackTraceLoading = true;
+    response.body.supportsDelayedStackTraceLoading = false;
 
     this.sendResponse(response);
 

@@ -2301,7 +2301,7 @@ dependencies = [
 [[package]]
 name = "sbpf-dbg-input"
 version = "0.1.0"
-source = "git+https://github.com/bidhan-a/sbpf-dbg?branch=feat%2Fdbg-input#d11dfeb40765f75e37b476a8fa12e875fe82294a"
+source = "git+https://github.com/bidhan-a/sbpf-dbg#f77d9c04862ffaeb97dc6dc3c7a9ba56d0e4b8b2"
 dependencies = [
  "solana-sdk",
  "thiserror 2.0.16",

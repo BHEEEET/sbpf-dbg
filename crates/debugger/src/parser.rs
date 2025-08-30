@@ -123,7 +123,7 @@ pub fn parse_rodata(file_path: &str, debug_file_path: &str) -> Result<Vec<ROData
 pub struct SourceLocation {
     pub file: String,
     pub line: u32,
-    _column: u32,
+    pub column: u32,
     _address: u64,
 }
 
@@ -285,7 +285,7 @@ impl LineMap {
                         let source_loc = SourceLocation {
                             file: file_path.clone(),
                             line,
-                            _column: column,
+                            column,
                             _address: address,
                         };
                         self.source_locations.insert(address, source_loc);

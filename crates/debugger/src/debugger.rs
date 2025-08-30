@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use solana_sbpf::ebpf;
 use solana_sbpf::elf::Executable;
 use solana_sbpf::error::ProgramResult;
@@ -193,6 +193,7 @@ impl<'a, 'b, C: ContextObject> Debugger<'a, 'b, C> {
 
                         self.at_breakpoint = false;
                         self.last_breakpoint_pc = None; // Clear the last breakpoint PC
+
                         // After executing, check if the new PC has a breakpoint
                         let new_pc = self.get_pc();
                         if self.breakpoints.contains(&new_pc) {
@@ -468,7 +469,7 @@ impl<'a, 'b, C: ContextObject> DebuggerInterface for Debugger<'a, 'b, C> {
         let dwarf_map = self.dwarf_line_map.as_ref();
         let mut index = 0;
 
-        // Helper to get function name, file, and line from PC.
+        // Helper to get function name, file, line, and column from PC.
         let lookup = |pc: u64| {
             if let Some(dwarf) = dwarf_map {
                 // Try to get source location
@@ -476,41 +477,51 @@ impl<'a, 'b, C: ContextObject> DebuggerInterface for Debugger<'a, 'b, C> {
                     let name = format!("{}", loc.file);
                     let file = loc.file.clone();
                     let line = loc.line as usize;
-                    return (name, file, line);
+                    let column = loc.column as usize;
+                    return (name, file, line, column);
                 }
                 // Fallback to just line..
                 if let Some(line) = dwarf.get_line_for_pc(pc) {
-                    return ("?".to_string(), "?".to_string(), line);
+                    return ("?".to_string(), "?".to_string(), line, 0);
                 }
             }
-            ("?".to_string(), "?".to_string(), 0)
+            ("?".to_string(), "?".to_string(), 0, 0)
         };
 
-        if vm.call_depth > 0 {
-            for (_i, frame) in vm.call_frames[..vm.call_depth as usize].iter().enumerate() {
-                let pc = frame.target_pc;
-                let (name, file, line) = lookup(pc);
-                frames.push(json!({
-                    "index": index,
-                    "name": name,
-                    "file": file,
-                    "line": line,
-                    "instruction": pc
-                }));
-                index += 1;
-            }
-        }
-
-        // Add the current frame (top of stack)
+        // Add the current frame first (top of stack)
         let current_pc = self.get_pc();
-        let (name, file, line) = lookup(current_pc);
+        let (name, file, line, column) = lookup(current_pc);
         frames.push(json!({
             "index": index,
             "name": name,
             "file": file,
             "line": line,
+            "column": column,
             "instruction": current_pc
         }));
+        index += 1;
+
+        // Add call frames in reverse order (oldest first)
+        if vm.call_depth > 0 {
+            for (_i, frame) in vm.call_frames[..vm.call_depth as usize]
+                .iter()
+                .enumerate()
+                .rev()
+            {
+                let pc = frame.target_pc;
+                let pc_bytes = pc * ebpf::INSN_SIZE as u64;
+                let (name, file, line, column) = lookup(pc_bytes);
+                frames.push(json!({
+                    "index": index,
+                    "name": name,
+                    "file": file,
+                    "line": line,
+                    "column": column,
+                    "instruction": pc_bytes
+                }));
+                index += 1;
+            }
+        }
 
         json!({ "frames": frames })
     }
