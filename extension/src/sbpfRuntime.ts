@@ -19,7 +19,7 @@ export interface ISbpfStackFrame {
   name: string;
   file: string;
   line: number;
-  column?: number;
+  column: number;
   instruction?: number;
   pc?: number;
 }
