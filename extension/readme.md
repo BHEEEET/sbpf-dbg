@@ -18,10 +18,17 @@ This extension provides debugging support for sBPF Assembly programs in Visual S
 ## Getting Started
 
 1. **Install the sBPF Debug extension in VS Code.**
+```
+git clone https://github.com/bidhan-a/sbpf-dbg.git &&
+cd sbpf-dbg/extension &&
+npm i &&
+npx @vscode/vsce package --no-yarn &&
+code --install-extension sbpf-dbg-*.vsix
+```
 2. **Prepare your sBPF program:**
    - Ensure you have an assembly `.s` file in your workspace.
    - Optionally, provide a custom linker `.ld` file if needed.
-3. **Configure your launch.json:**
+3. **Configure your launch.json in `.vscode` folder:**
    - Use the following example configuration:
 
 ```json
